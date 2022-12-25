@@ -1,14 +1,16 @@
-type Difference = {
-  oldChar: string;
-  newChar: string;
-  index: number;
-};
-
-export function difference(
+export function checkDifference(
   oldString: string,
   newString: string
-): Array<Difference> {
-  const differences: Array<Difference> = [];
+): {
+  oldString: string;
+  newString: string;
+  differences: Array<{ oldChar: string; newChar: string; index: number }>;
+} {
+  const differences: Array<{
+    oldChar: string;
+    newChar: string;
+    index: number;
+  }> = [];
 
   for (let i = 0; i < oldString.length; i++) {
     if (oldString[i] !== newString[i]) {
@@ -20,5 +22,5 @@ export function difference(
     }
   }
 
-  return differences;
+  return { oldString, newString, differences };
 }
