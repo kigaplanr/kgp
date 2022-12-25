@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import { ActivityType } from "discord.js";
+import { sendKigaStart, sendKigaInfo, sendKigaEnd } from "../jobs";
 import { ExtendedClient } from "../structures/Client";
 import { BaseEvent } from "../structures/Event";
 
@@ -14,5 +15,9 @@ export default class ReadyEvent extends BaseEvent {
       type: ActivityType.Listening,
     });
     client.user.setStatus("dnd");
+
+    sendKigaStart();
+    sendKigaInfo();
+    sendKigaEnd();
   }
 }
