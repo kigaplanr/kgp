@@ -6,6 +6,10 @@ import {
   GuildMember,
   TextChannel,
   Message,
+  ComponentType,
+  MessageComponentInteraction,
+  Collection,
+  MessageComponent,
 } from "discord.js";
 import { Token } from "../../functions/token";
 import DeniedUser from "../../models/verification/denied";
@@ -32,6 +36,14 @@ export default class InteractionCreateEvent extends BaseEvent {
         const Email = interaction.fields.getTextInputValue("input-email");
 
         const member = interaction.member as GuildMember;
+
+        // if (buttonCooldown.has(interaction.user.id))
+        //   return interaction.reply({
+        //     content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
+        //     ephemeral: true,
+        //   });
+        // buttonCooldown.add(interaction.user.id);
+        // setTimeout(() => buttonCooldown.delete(interaction.user.id), 60000);
 
         const embed = new EmbedBuilder()
           .setDescription(
@@ -213,6 +225,163 @@ export default class InteractionCreateEvent extends BaseEvent {
           content: `Die Anfrage wurde abgelehnt.`,
           ephemeral: true,
         });
+      }
+      // TODO: Verification/Backup codes
+      // case "display-verificationcodes": {
+      //   if (buttonCooldown.has(interaction.user.id))
+      //     return interaction.reply({
+      //       content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
+      //       ephemeral: true,
+      //     });
+      //   buttonCooldown.add(interaction.user.id);
+      //   setTimeout(() => buttonCooldown.delete(interaction.user.id), 120000);
+      // }
+      case "delete-data": {
+        if (buttonCooldown.has(interaction.user.id))
+          return interaction.reply({
+            content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
+            ephemeral: true,
+          });
+        buttonCooldown.add(interaction.user.id);
+        setTimeout(() => buttonCooldown.delete(interaction.user.id), 90000);
+
+        const userQuery = await VerifiedInfo.findOne({
+          userID: interaction.user.id,
+        });
+
+        if (
+          !(interaction.member as GuildMember).roles.cache.has(
+            process.env.VERIFIED_ROLE
+          ) ||
+          !userQuery
+        ) {
+          return interaction.reply({
+            content: `${emojis.error} | Du bist (noch) nicht verifiziert.`,
+            ephemeral: true,
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setTitle("Daten löschen")
+          .setDescription(
+            `Bist du dir sicher, dass du deine Daten löschen möchtest? Dieser Vorgang kann nicht rückgängig gemacht werden.`
+          );
+
+        const cancelledEmbed = new EmbedBuilder()
+          .setDescription(`${emojis.error} | Vorgang abgebrochen.`)
+          .setColor("Red");
+
+        const successEmbed = new EmbedBuilder()
+          .setDescription(
+            `${emojis.success} | Vorgang erfolgreich abgeschlossen.`
+          )
+          .setColor("Green");
+
+        const timedOutEmbed = new EmbedBuilder()
+          .setDescription(
+            `${emojis.error} | Vorgang abgebrochen. (Zeitüberschreitung)`
+          )
+          .setColor("Red");
+
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId("JA")
+            .setLabel("Ja")
+            .setStyle(ButtonStyle.Success),
+
+          new ButtonBuilder()
+            .setCustomId("NEIN")
+            .setLabel("Nein")
+            .setStyle(ButtonStyle.Primary)
+        );
+
+        const msg = (await interaction.reply({
+          embeds: [embed],
+          components: [row],
+          ephemeral: true,
+          fetchReply: true,
+        })) as Message;
+
+        const collector = msg.channel.createMessageComponentCollector({
+          componentType: ComponentType.Button,
+          time: 15000,
+        });
+
+        collector.on("collect", async (i: MessageComponentInteraction) => {
+          if (i.customId === "JA") {
+            await (interaction.member as GuildMember).roles.remove(
+              process.env.VERIFIED_ROLE!
+            );
+            await VerifiedInfo.findOneAndDelete({
+              userID: interaction.user.id,
+            });
+
+            await interaction.editReply({
+              embeds: [successEmbed],
+              components: [],
+            });
+          }
+
+          if (i.customId === "NEIN") {
+            await interaction.editReply({
+              embeds: [cancelledEmbed],
+              components: [],
+            });
+          }
+        });
+
+        collector.on(
+          "end",
+          async (
+            collected: Collection<MessageComponent, string>,
+            error: string
+          ) => {
+            try {
+              // msg.components[0].components.map((c) => c.setDisabled(true));
+
+              await interaction.editReply({
+                embeds: [timedOutEmbed],
+                components: [],
+              });
+            } catch (error) {
+              console.log(error);
+            }
+          }
+        );
+      }
+      case "check-data": {
+        const userQuery = await VerifiedInfo.findOne({
+          userID: interaction.user.id,
+        });
+
+        if (buttonCooldown.has(interaction.user.id))
+          return interaction.reply({
+            content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
+            ephemeral: true,
+          });
+        buttonCooldown.add(interaction.user.id);
+        setTimeout(() => buttonCooldown.delete(interaction.user.id), 30000);
+
+        if (
+          !(interaction.member as GuildMember).roles.cache.has(
+            process.env.VERIFIED_ROLE
+          ) ||
+          !userQuery
+        )
+          return interaction.reply({
+            content: `${emojis.error} | Du hast keine Daten zum Anzeigen.`,
+            ephemeral: true,
+          });
+
+        const embed = new EmbedBuilder()
+          .setTitle("Deine Daten")
+          .setDescription(
+            `**Name:** <@${interaction.user.id}>\n**Klasse:** ${userQuery.klasse}\n**Email:** ${userQuery.email}`
+          )
+          .setTimestamp()
+          .setColor("Green");
+
+        interaction.reply({ embeds: [embed], ephemeral: true });
       }
     }
   }
