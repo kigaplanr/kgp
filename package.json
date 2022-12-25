@@ -1,7 +1,7 @@
 {
-  "name": "postgrex",
+  "name": "bafep",
   "version": "1.0.0",
-  "description": "I#m bored",
+  "description": "The BAfEP - Kiga Discord integration",
   "main": "src/index.ts",
   "scripts": {
     "start": "node dist/index.js",
