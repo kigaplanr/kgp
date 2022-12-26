@@ -14,6 +14,7 @@ export default class InteractionCreateEvent extends BaseEvent {
       if (!command)
         return interaction.reply({
           content: "You have used a non existent command.",
+          ephemeral: true,
         });
       command.run({
         args,
