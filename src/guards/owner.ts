@@ -5,10 +5,9 @@ import emojis from "../styles/emojis";
 
 export function ownerCheck(interaction: CommandInteraction) {
   if (!config.owners.includes(interaction.user.id)) {
-    interaction.reply({
+    return interaction.reply({
       content: `${emojis.error} | You can't use this.`,
       ephemeral: true,
     });
-    return false;
   }
 }
