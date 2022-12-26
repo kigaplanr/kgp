@@ -10,6 +10,7 @@ export default class MessageEvent extends BaseEvent {
     super("messageCreate");
   }
   async run(client: ExtendedClient, message: Message) {
-    logger.debug(message.content);
+    const message_text = `${message.author.tag} in ${message.guild.name} said: \"${message.content}\"`
+    logger.debug(message_text)
   }
 }

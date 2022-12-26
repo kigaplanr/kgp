@@ -10,6 +10,7 @@ import {
   MessageComponentInteraction,
   Collection,
   MessageComponent,
+  Role,
 } from "discord.js";
 import { Token } from "../../functions/token";
 import DeniedUser from "../../models/verification/denied";
@@ -140,7 +141,7 @@ export default class InteractionCreateEvent extends BaseEvent {
 
         const verifiedRole = interaction.guild?.roles.cache.get(
           process.env.VERIFIED_ROLE
-        );
+        ) as Role;
 
         const verifiedUserInfo = await VerifiedInfo.findOne({ userID: user });
         const verificationMember = verifiedUserInfo.userID;
