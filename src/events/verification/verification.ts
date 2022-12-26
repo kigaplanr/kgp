@@ -13,6 +13,10 @@ import {
 // database
 import DeniedUser from "../../models/verification/denied";
 
+type userType = {
+  userID: string;
+};
+
 import { ExtendedClient } from "../../structures/Client";
 import { BaseEvent } from "../../structures/Event";
 import emojis from "../../styles/emojis";
@@ -80,9 +84,9 @@ export default class InteractionCreateEvent extends BaseEvent {
           .setColor("Red")
           .setTimestamp();
 
-        const deniedQuery = await DeniedUser.findOne({
+        const deniedQuery = (await DeniedUser.findOne({
           userID: interaction.user.id,
-        });
+        })) as userType;
         if (deniedQuery)
           return interaction.reply({ embeds: [embed], ephemeral: true });
 
