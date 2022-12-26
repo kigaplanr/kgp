@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/src/index.js",
     "dev": "concurrently \"tsc -w\" \"nodemon ./dist/src/index.js\"",
-    "hard": "rm -rf ./dist && npm run build && npm run dev", 
+    "hard": "rm -rf ./dist && npm run build && npm run dev",
     "build": "tsc",
     "test": "jest",
     "lint": "eslint . --ext .ts"
@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@typegoose/typegoose": "^10.0.0",
     "axios": "^0.24.0",
     "chalk": "^4.1.2",
     "concurrently": "^7.6.0",

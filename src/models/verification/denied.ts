@@ -1,18 +1,15 @@
-import { Schema, model } from "mongoose";
+import { prop, getModelForClass } from "@typegoose/typegoose";
 
-interface DeniedVerifications {
+/**
+ * @class DeniedVerification
+ * @description DeniedVerification model
+ * @property {string} userID - The user's ID
+ */
+class DeniedVerification {
+  @prop()
   userID: string;
 }
 
-const DeniedVerifications = new Schema({
-  userID: {
-    type: String,
-  },
-});
+const DeniedVerificationModel = getModelForClass(DeniedVerification);
 
-const DeniedUser = model<DeniedVerifications>(
-  "denied-verficiation",
-  DeniedVerifications
-);
-
-export default DeniedUser;
+export default DeniedVerificationModel;

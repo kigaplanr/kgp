@@ -1,38 +1,35 @@
-import { Schema, model } from "mongoose";
+import { prop, getModelForClass } from "@typegoose/typegoose";
 
-interface User {
+/**
+ * @class User
+ * @description User model
+ * @property {string} userID - The user's ID
+ * @property {number} count - The user's message count
+ * @property {string[]} messages - The user's messages
+ * @property {boolean} requestedData - If the user requested their data
+ * @property {Date} createdAt - The date when the user was created
+ * @property {Date} updatedAt - The date when the user was updated
+ */
+class User {
+  @prop()
   userID: string;
+
+  @prop({ default: 0 })
   count: number;
+
+  @prop()
   messages: string[];
-  requestedData: string;
+
+  @prop()
+  requestedData: boolean;
+
+  @prop()
   createdAt: Date;
+
+  @prop()
   updatedAt: Date;
 }
 
-const User = new Schema({
-  userID: {
-    type: String,
-  },
-  count: {
-    type: Number,
-    default: 0,
-  },
-  messages: {
-    type: Array,
-  },
-  requestedData: {
-    type: String,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+const UserModel = getModelForClass(User);
 
-const ServerUser = model<User>("users", User);
-
-export default ServerUser;
+export default UserModel;
