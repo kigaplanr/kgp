@@ -120,7 +120,6 @@ export default class InteractionCreateEvent extends BaseEvent {
           newRequestCooldown
         );
 
-        interaction.reply({ embeds: [embed], ephemeral: true });
 
         // generate five codes for the user
         let codes: string[] = [];
@@ -167,6 +166,8 @@ export default class InteractionCreateEvent extends BaseEvent {
             ephemeral: true,
           });
         }
+
+        return interaction.reply({ embeds: [embed], ephemeral: true });
       }
 
       case "accept-verification": {
@@ -177,12 +178,11 @@ export default class InteractionCreateEvent extends BaseEvent {
         ) as Role;
 
         const verifiedUserInfo = await Verification.findOne({ userID: user });
-        const verificationMember = verifiedUserInfo.userID;
 
         const acceptedEmbed = new EmbedBuilder()
           .setTitle("Verifizierung erfolgreich")
           .setDescription(
-            `**Name:** <@${verificationMember}>\n**Klasse:** ${
+            `**Name:** <@${verifiedUserInfo}>\n**Klasse:** ${
               verifiedUserInfo?.klasse
             }\n**Email:** ${verifiedUserInfo?.email}
           
@@ -197,8 +197,9 @@ export default class InteractionCreateEvent extends BaseEvent {
           components: [],
         });
 
-        const newMember =
-          interaction.guild?.members.cache.get(verificationMember);
+        const newMember = interaction.guild?.members.cache.get(
+          verifiedUserInfo?.userID
+        );
         try {
           await newMember?.roles.add(verifiedRole!);
         } catch (error: unknown) {
