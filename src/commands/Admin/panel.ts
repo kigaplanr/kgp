@@ -3,7 +3,6 @@ import {
   ApplicationCommandOptionType,
   ButtonBuilder,
   ButtonStyle,
-  GuildChannel,
   PermissionFlagsBits,
   StringSelectMenuBuilder,
   TextChannel,
