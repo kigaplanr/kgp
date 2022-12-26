@@ -9,7 +9,6 @@ import {
   ComponentType,
   MessageComponentInteraction,
   Collection,
-  MessageComponent,
   Role,
   Snowflake,
 } from "discord.js";
@@ -34,6 +33,15 @@ interface VerificationRequest {
   email: string;
   status: "N/A" | "Accepted" | "declined";
 }
+
+type userQueryType = {
+  userID: Snowflake | string;
+};
+
+type collectorType = Collection<
+  MessageComponentInteraction,
+  Snowflake | string
+>;
 
 // database
 import Verification from "../../models/verification/verification";
@@ -243,9 +251,9 @@ export default class InteractionCreateEvent extends BaseEvent {
         );
 
         // "block" the user from verifying again
-        await DeniedUser.create({
+        (await DeniedUser.create({
           userID: member,
-        });
+        })) as userQueryType;
 
         return interaction.reply({
           content: `Die Anfrage wurde abgelehnt.`,
@@ -274,9 +282,9 @@ export default class InteractionCreateEvent extends BaseEvent {
           backupCodesCooldown
         );
 
-        const userQuery = await VerifiedInfo.findOne({
+        const userQuery = (await VerifiedInfo.findOne({
           userID: interaction.user.id,
-        });
+        })) as userQueryType;
 
         if (
           !(interaction.member as GuildMember).roles.cache.has(
@@ -359,24 +367,16 @@ export default class InteractionCreateEvent extends BaseEvent {
           }
         });
 
-        collector.on(
-          "end",
-          async (
-            collected: Collection<MessageComponent, string>,
-            error: string
-          ) => {
-            try {
-              // msg.components[0].components.map((c) => c.setDisabled(true));
-
-              await interaction.editReply({
-                embeds: [timedOutEmbed],
-                components: [],
-              });
-            } catch (error) {
-              console.log(error);
-            }
+        collector.on("end", async (collected: collectorType, error: string) => {
+          try {
+            await interaction.editReply({
+              embeds: [timedOutEmbed],
+              components: [],
+            });
+          } catch (error) {
+            console.log(error);
           }
-        );
+        });
       }
       case "check-data": {
         const userQuery = await VerifiedInfo.findOne({
