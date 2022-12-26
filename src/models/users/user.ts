@@ -1,5 +1,14 @@
 import { Schema, model } from "mongoose";
 
+interface User {
+  userID: string;
+  count: number;
+  messages: string[];
+  requestedData: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const User = new Schema({
   userID: {
     type: String,
@@ -24,6 +33,6 @@ const User = new Schema({
   },
 });
 
-const ServerUser = model("users", User);
+const ServerUser = model<User>("users", User);
 
 export default ServerUser;

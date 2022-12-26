@@ -1,5 +1,17 @@
 import { Schema, model } from "mongoose";
 
+interface VerificationType {
+  userID: string;
+  guildID: string;
+  klasse: string;
+  email: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  requestedcodes: boolean;
+  recoverycodes: string[];
+}
+
 const Verification = new Schema({
   userID: {
     type: String,
@@ -32,6 +44,6 @@ const Verification = new Schema({
   },
 });
 
-const User = model("verification", Verification);
+const User = model<VerificationType>("verification", Verification);
 
 export default User;
