@@ -40,7 +40,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           });
         }
 
-        interaction.reply({
+        return interaction.reply({
           content: `${emojis.error} | You are already verified!`,
           ephemeral: true,
         });
