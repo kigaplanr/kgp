@@ -14,6 +14,7 @@ import {
 import { Token } from "../../functions/token";
 import DeniedUser from "../../models/verification/denied";
 
+import emojis from "../../styles/emojis";
 const buttonCooldown = new Set();
 
 // database
@@ -22,7 +23,6 @@ import VerifiedInfo from "../../models/verification/verification";
 
 import { ExtendedClient } from "../../structures/Client";
 import { BaseEvent } from "../../structures/Event";
-import emojis from "../../styles/emojis";
 import { ExtendedButtonInteraction } from "../../typings/Command";
 
 export default class InteractionCreateEvent extends BaseEvent {
