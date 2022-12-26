@@ -57,6 +57,7 @@ export class ExtendedClient extends Discord.Client {
       const command: CommandType = await this.importFile(filePath);
       if (!command.name) return;
       const properties = { directory, ...command };
+      console.table([ { name: command.name, description: command.description } ]);
 
       this.commands.set(command.name, properties);
       if (["MESSAGE", "USER"].includes(command.type as string | any))
