@@ -13,10 +13,10 @@ import {
   Snowflake,
 } from "discord.js";
 import { Token } from "../../functions/token";
-import DeniedUser from "../../models/verification/denied";
 
 import emojis from "../../styles/emojis";
 
+// cooldowns
 const buttonCooldown = new Set<string | Snowflake>();
 const newRequestCooldown: number = 30000;
 const checkDataCooldown: number = 30000;
@@ -45,8 +45,9 @@ type collectorType = Collection<
 
 // database
 import Verification from "../../models/verification/verification";
-import VerifiedInfo from "../../models/verification/verification";
+import DeniedUser from "../../models/verification/denied";
 
+// events
 import { ExtendedClient } from "../../structures/Client";
 import { BaseEvent } from "../../structures/Event";
 import { ExtendedButtonInteraction } from "../../typings/Command";
@@ -175,7 +176,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           process.env.VERIFIED_ROLE
         ) as Role;
 
-        const verifiedUserInfo = await VerifiedInfo.findOne({ userID: user });
+        const verifiedUserInfo = await Verification.findOne({ userID: user });
         const verificationMember = verifiedUserInfo.userID;
 
         const acceptedEmbed = new EmbedBuilder()
@@ -205,7 +206,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           return;
         }
 
-        await VerifiedInfo.findOneAndUpdate(
+        await Verification.findOneAndUpdate(
           { userID: user },
           { status: "Accepted" }
         );
@@ -220,7 +221,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         const user = interaction.message?.embeds[0].footer?.text;
 
         // get all the data of the given user
-        const verifiedUserInfo = await VerifiedInfo.findOne({ userID: user });
+        const verifiedUserInfo = await Verification.findOne({ userID: user });
         const member = verifiedUserInfo?.userID;
 
         const declinedEmbed = new EmbedBuilder()
@@ -241,7 +242,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           components: [],
         });
 
-        await VerifiedInfo.findOneAndUpdate(
+        await Verification.findOneAndUpdate(
           { userID: user },
           {
             status: "declined",
@@ -282,7 +283,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           backupCodesCooldown
         );
 
-        const userQuery = (await VerifiedInfo.findOne({
+        const userQuery = (await Verification.findOne({
           userID: interaction.user.id,
         })) as userQueryType;
 
@@ -349,7 +350,7 @@ export default class InteractionCreateEvent extends BaseEvent {
             await (interaction.member as GuildMember).roles.remove(
               process.env.VERIFIED_ROLE!
             );
-            await VerifiedInfo.findOneAndDelete({
+            await Verification.findOneAndDelete({
               userID: interaction.user.id,
             });
 
@@ -379,7 +380,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         });
       }
       case "check-data": {
-        const userQuery = await VerifiedInfo.findOne({
+        const userQuery = await Verification.findOne({
           userID: interaction.user.id,
         });
 
