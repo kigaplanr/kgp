@@ -11,6 +11,7 @@ import {
   Collection,
   Role,
   Snowflake,
+  CommandInteraction,
 } from "discord.js";
 import { Token } from "../../functions/token";
 
@@ -18,9 +19,15 @@ import emojis from "../../styles/emojis";
 
 // cooldowns
 const buttonCooldown = new Set<string | Snowflake>();
+
+const ___defaultCooldown: number = 60000;
 const newRequestCooldown: number = 30000;
 const checkDataCooldown: number = 30000;
 const backupCodesCooldown: number = 90000;
+
+// collector cooldowns
+const codeButtonTimeout: number = 30000;
+const deleteDataTimeout: number = 30000;
 
 interface VerificationFormFields {
   "input-klasse": string;
@@ -36,12 +43,31 @@ interface VerificationRequest {
 
 type userQueryType = {
   userID: Snowflake | string;
+  guildID?: Snowflake | string;
+  klasse?: string;
+  email?: string;
+  status?: "N/A" | "Accepted" | "declined";
+  requestedcodes?: boolean;
+  recoverycodes?: Array<string>;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 type collectorType = Collection<
   MessageComponentInteraction,
   Snowflake | string
 >;
+
+function buttonCldw(interaction: CommandInteraction, cooldown: number) {
+  if (buttonCooldown.has(interaction.user.id)) {
+    return interaction.reply({
+      content: `<@${interaction.user.id}> du kannst dies nur alle paar Sekunden klicken.`,
+      ephemeral: true,
+    });
+  }
+  buttonCooldown.add(interaction.user.id);
+  setTimeout(() => buttonCooldown.delete(interaction.user.id), cooldown);
+}
 
 // database
 import Verification from "../../models/verification/verification";
@@ -95,7 +121,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           .setDescription(
             `**Name:** ${member.user.tag} (${member.user.id})
               **Klasse:** ${Klasse}
-              **Email:** ${Email}`
+              **Email:** || ${Email} ||`
           )
           .setColor("White")
           .setFooter({ text: `${member.user.id}` });
@@ -105,7 +131,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         });
         if (verificationUser)
           return interaction.reply({
-            content: "Du hast bereits eine Verifizierungsanfrage gestellt.",
+            content: `${emojis.error} | Du hast bereits eine Verifizierungsanfrage gestellt!`,
             ephemeral: true,
           });
 
@@ -119,7 +145,6 @@ export default class InteractionCreateEvent extends BaseEvent {
           () => buttonCooldown.delete(interaction.user.id),
           newRequestCooldown
         );
-
 
         // generate five codes for the user
         let codes: string[] = [];
@@ -182,9 +207,9 @@ export default class InteractionCreateEvent extends BaseEvent {
         const acceptedEmbed = new EmbedBuilder()
           .setTitle("Verifizierung erfolgreich")
           .setDescription(
-            `**Name:** <@${verifiedUserInfo}>\n**Klasse:** ${
+            `**Name:** <@${verifiedUserInfo.userID}>\n**Klasse:** ${
               verifiedUserInfo?.klasse
-            }\n**Email:** ${verifiedUserInfo?.email}
+            }\n**Email:** || ${verifiedUserInfo?.email} ||
           
           Angenommen von ${
             interaction.user.tag
@@ -213,7 +238,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         );
 
         return interaction.reply({
-          content: `${emojis.success} | Erfolgreich angenommen`,
+          content: `${emojis.success} | Nutzer erfolgreich angenommen`,
           ephemeral: true,
         });
       }
@@ -262,16 +287,114 @@ export default class InteractionCreateEvent extends BaseEvent {
           ephemeral: true,
         });
       }
-      // TODO: Verification/Backup codes
-      // case "display-verificationcodes": {
-      //   if (buttonCooldown.has(interaction.user.id))
-      //     return interaction.reply({
-      //       content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
-      //       ephemeral: true,
-      //     });
-      //   buttonCooldown.add(interaction.user.id);
-      //   setTimeout(() => buttonCooldown.delete(interaction.user.id), 120000);
-      // }
+
+      case "display-verificationcodes": {
+        // buttonCldw(
+        //   interaction as unknown as CommandInteraction,
+        //   backupCodesCooldown
+        // );
+
+        const userQuery = (await Verification.findOne({
+          userID: interaction.user.id,
+        })) as userQueryType;
+
+        if (!userQuery)
+          return interaction.reply({
+            content: `${emojis.error} | Du bist (noch) nicht verifiziert.`,
+            ephemeral: true,
+          });
+
+        const pendingEmbed = new EmbedBuilder()
+          .setTitle("Codes anzeigen?")
+          .setDescription(
+            `**${emojis.notify} | Möchtest du dir deine Recovery-Codes wirklich anzeigen lassen?**\n\nHinweis: Wenn du hier fortfährst, werden hier deine einzigartigen Wiederherstellungs-Codes angezeigt. Bitte handle mit Bedacht.`
+          )
+          .setColor("Green");
+
+        const codeEmbed = new EmbedBuilder()
+          .setTitle("Deine Recovery-Codes")
+          .setDescription(
+            `**${userQuery.recoverycodes.join(
+              "\n"
+            )}**\n\n**Hinweis:** Die Codes sind nur einmal verwendbar und nicht mehr abrufbar, bitte notiere dir sie an einem sicheren Ort.`
+          )
+          .setColor("Green");
+
+        const cancelCodeEmbed = new EmbedBuilder()
+          .setDescription(
+            `**${emojis.error} | Der Prozess wurde abgrebochen.**`
+          )
+          .setColor("Red");
+
+        const codesTimedout = new EmbedBuilder()
+          .setDescription(
+            `**${emojis.error} | Der Prozess wurde abgebrochen, da du zu lange gebraucht hast.**`
+          )
+          .setColor("Red");
+
+        const codeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId("CODES-ZEIGEN")
+            .setLabel("Codes anzeigen")
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji("🔑"),
+          new ButtonBuilder()
+            .setCustomId("ABBRECHEN")
+            .setLabel("Abbrechen")
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji("❌")
+        );
+
+        const codeMsg = await interaction.reply({
+          embeds: [pendingEmbed],
+          components: [codeRow],
+          fetchReply: true,
+          ephemeral: true,
+        });
+
+        const codeCollector = codeMsg.channel.createMessageComponentCollector({
+          componentType: ComponentType.Button,
+          time: codeButtonTimeout,
+        });
+
+        codeCollector.on("collect", async (i: MessageComponentInteraction) => {
+          if (i.customId === "CODES-ZEIGEN") {
+            // set the boolean to true so the user can't request codes again
+            (await Verification.findOneAndUpdate({
+              userID: interaction.user.id,
+              requestedcodes: true,
+            })) as userQueryType;
+
+            await interaction.editReply({
+              embeds: [codeEmbed],
+              components: [],
+            });
+          }
+
+          if (i.customId === "ABBRECHEN") {
+            await interaction.editReply({
+              embeds: [cancelCodeEmbed],
+              components: [],
+            });
+          }
+        });
+
+        codeCollector.on(
+          "end",
+          async (collected: collectorType, error: string) => {
+            try {
+              await interaction.editReply({
+                embeds: [codesTimedout],
+                components: [],
+              });
+            } catch (error) {
+              console.log(error);
+            }
+          }
+        );
+
+        return;
+      }
       case "delete-data": {
         if (buttonCooldown.has(interaction.user.id))
           return interaction.reply({
@@ -341,44 +464,52 @@ export default class InteractionCreateEvent extends BaseEvent {
           fetchReply: true,
         })) as Message;
 
-        const collector = msg.channel.createMessageComponentCollector({
-          componentType: ComponentType.Button,
-          time: 15000,
-        });
-
-        collector.on("collect", async (i: MessageComponentInteraction) => {
-          if (i.customId === "JA") {
-            await (interaction.member as GuildMember).roles.remove(
-              process.env.VERIFIED_ROLE!
-            );
-            await Verification.findOneAndDelete({
-              userID: interaction.user.id,
-            });
-
-            await interaction.editReply({
-              embeds: [successEmbed],
-              components: [],
-            });
+        const dataDeleteCollector = msg.channel.createMessageComponentCollector(
+          {
+            componentType: ComponentType.Button,
+            time: deleteDataTimeout,
           }
+        );
 
-          if (i.customId === "NEIN") {
-            await interaction.editReply({
-              embeds: [cancelledEmbed],
-              components: [],
-            });
-          }
-        });
+        dataDeleteCollector.on(
+          "collect",
+          async (i: MessageComponentInteraction) => {
+            if (i.customId === "JA") {
+              await (interaction.member as GuildMember).roles.remove(
+                process.env.VERIFIED_ROLE!
+              );
+              await Verification.findOneAndDelete({
+                userID: interaction.user.id,
+              });
 
-        collector.on("end", async (collected: collectorType, error: string) => {
-          try {
-            await interaction.editReply({
-              embeds: [timedOutEmbed],
-              components: [],
-            });
-          } catch (error) {
-            console.log(error);
+              await interaction.editReply({
+                embeds: [successEmbed],
+                components: [],
+              });
+            }
+
+            if (i.customId === "NEIN") {
+              await interaction.editReply({
+                embeds: [cancelledEmbed],
+                components: [],
+              });
+            }
           }
-        });
+        );
+
+        dataDeleteCollector.on(
+          "end",
+          async (collected: collectorType, error: string) => {
+            try {
+              await interaction.editReply({
+                embeds: [timedOutEmbed],
+                components: [],
+              });
+            } catch (error) {
+              console.log(error);
+            }
+          }
+        );
       }
       case "check-data": {
         const userQuery = await Verification.findOne({
