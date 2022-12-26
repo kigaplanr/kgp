@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command";
 import axios from "axios";
+import { ownerCheck } from "../../guards/owner";
 
 export default new Command({
   name: "info",
@@ -66,6 +67,9 @@ export default new Command({
     },
   ],
   run: async ({ client, interaction }) => {
+    await ownerCheck(interaction);
+    if (interaction.replied) return;
+
     if (interaction.options.getSubcommand() === "user") {
       const member = interaction.options.getMember("user") as GuildMember;
       const res = await axios.get(

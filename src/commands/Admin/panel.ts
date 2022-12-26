@@ -8,6 +8,7 @@ import {
   StringSelectMenuBuilder,
   TextChannel,
 } from "discord.js";
+import { ownerCheck } from "../../guards/owner";
 import { Command } from "../../structures/Command";
 
 import emojis from "../../styles/emojis";
@@ -70,7 +71,10 @@ export default new Command({
       ],
     },
   ],
-  run: ({ interaction, client }) => {
+  run: async ({ interaction, client }) => {
+    await ownerCheck(interaction);
+    if (interaction.replied) return;
+
     const channel =
       interaction.options.getChannel("channel") ||
       (interaction.channel as TextChannel);
