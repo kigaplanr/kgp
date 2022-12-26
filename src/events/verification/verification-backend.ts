@@ -11,12 +11,29 @@ import {
   Collection,
   MessageComponent,
   Role,
+  Snowflake,
 } from "discord.js";
 import { Token } from "../../functions/token";
 import DeniedUser from "../../models/verification/denied";
 
 import emojis from "../../styles/emojis";
-const buttonCooldown = new Set();
+
+const buttonCooldown = new Set<string | Snowflake>();
+const newRequestCooldown: number = 30000;
+const checkDataCooldown: number = 30000;
+const backupCodesCooldown: number = 90000;
+
+interface VerificationFormFields {
+  "input-klasse": string;
+  "input-email": string;
+}
+
+interface VerificationRequest {
+  userID: Snowflake | string;
+  klasse: string;
+  email: string;
+  status: "N/A" | "Accepted" | "declined";
+}
 
 // database
 import Verification from "../../models/verification/verification";
@@ -33,8 +50,12 @@ export default class InteractionCreateEvent extends BaseEvent {
   async run(client: ExtendedClient, interaction: ExtendedButtonInteraction) {
     switch (interaction.customId) {
       case "verification-modal": {
-        const Klasse = interaction.fields.getTextInputValue("input-klasse");
-        const Email = interaction.fields.getTextInputValue("input-email");
+        const Klasse = interaction.fields.getTextInputValue(
+          "input-klasse"
+        ) as VerificationFormFields;
+        const Email = interaction.fields.getTextInputValue(
+          "input-email"
+        ) as VerificationFormFields;
 
         const member = interaction.member as GuildMember;
 
@@ -85,7 +106,10 @@ export default class InteractionCreateEvent extends BaseEvent {
             ephemeral: true,
           });
         buttonCooldown.add(interaction.user.id);
-        setTimeout(() => buttonCooldown.delete(interaction.user.id), 30000);
+        setTimeout(
+          () => buttonCooldown.delete(interaction.user.id),
+          newRequestCooldown
+        );
 
         interaction.reply({ embeds: [embed], ephemeral: true });
 
@@ -95,7 +119,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           codes.push(Token.generateToken());
         }
 
-        await Verification.create({
+        (await Verification.create({
           userID: (member as GuildMember).id,
           guildID: member.guild.id,
           messageID: interaction.message?.id,
@@ -104,7 +128,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           status: "N/A",
           requestedcodes: false,
           recoverycodes: codes,
-        });
+        })) as VerificationRequest;
 
         const acceptButton = new ButtonBuilder()
           .setCustomId("accept-verification")
@@ -146,7 +170,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         const verifiedUserInfo = await VerifiedInfo.findOne({ userID: user });
         const verificationMember = verifiedUserInfo.userID;
 
-        const embed = new EmbedBuilder()
+        const acceptedEmbed = new EmbedBuilder()
           .setTitle("Verifizierung erfolgreich")
           .setDescription(
             `**Name:** <@${verificationMember}>\n**Klasse:** ${
@@ -159,8 +183,9 @@ export default class InteractionCreateEvent extends BaseEvent {
           )
           .setColor("Green");
 
-        (interaction.message as Message).edit({
-          embeds: [embed],
+        await (interaction.message as Message).edit({
+          embeds: [acceptedEmbed],
+          components: [],
         });
 
         const newMember =
@@ -177,7 +202,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           { status: "Accepted" }
         );
 
-        interaction.reply({
+        return interaction.reply({
           content: `${emojis.success} | Erfolgreich angenommen`,
           ephemeral: true,
         });
@@ -190,7 +215,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         const verifiedUserInfo = await VerifiedInfo.findOne({ userID: user });
         const member = verifiedUserInfo?.userID;
 
-        const embed = new EmbedBuilder()
+        const declinedEmbed = new EmbedBuilder()
           .setTitle("Verifizierung abgelehnt")
           .setDescription(
             `**Name:** <@${member}>\n**Klasse:** ${
@@ -204,7 +229,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           .setColor("Red");
 
         (interaction.message as Message).edit({
-          embeds: [embed],
+          embeds: [declinedEmbed],
           components: [],
         });
 
@@ -222,7 +247,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           userID: member,
         });
 
-        interaction.reply({
+        return interaction.reply({
           content: `Die Anfrage wurde abgelehnt.`,
           ephemeral: true,
         });
@@ -244,7 +269,10 @@ export default class InteractionCreateEvent extends BaseEvent {
             ephemeral: true,
           });
         buttonCooldown.add(interaction.user.id);
-        setTimeout(() => buttonCooldown.delete(interaction.user.id), 90000);
+        setTimeout(
+          () => buttonCooldown.delete(interaction.user.id),
+          backupCodesCooldown
+        );
 
         const userQuery = await VerifiedInfo.findOne({
           userID: interaction.user.id,
@@ -361,7 +389,10 @@ export default class InteractionCreateEvent extends BaseEvent {
             ephemeral: true,
           });
         buttonCooldown.add(interaction.user.id);
-        setTimeout(() => buttonCooldown.delete(interaction.user.id), 30000);
+        setTimeout(
+          () => buttonCooldown.delete(interaction.user.id),
+          checkDataCooldown
+        );
 
         if (
           !(interaction.member as GuildMember).roles.cache.has(
@@ -382,7 +413,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           .setTimestamp()
           .setColor("Green");
 
-        interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
       }
     }
   }
