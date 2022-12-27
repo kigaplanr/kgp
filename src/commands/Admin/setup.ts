@@ -143,6 +143,23 @@ export default new Command({
         guildID: interaction.guild.id,
       });
 
+      const autoresponse = await Autoresponse.findOne(
+        {
+          $and: [
+            { guildID: interaction.guild.id },
+            { trigger: { $elemMatch: { trigger: trigger } } },
+          ],
+        },
+        { trigger: { $elemMatch: { trigger: trigger } } }
+      );
+
+      if (autoresponse) {
+        return interaction.reply({
+          content: `${emojis.error} | The trigger "${trigger}" already exists`,
+          ephemeral: true,
+        });
+      }
+
       const update: Update | null =
         isEnabled === false && trigger === null && response === null
           ? { enabled: false }
