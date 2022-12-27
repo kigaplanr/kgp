@@ -13,5 +13,5 @@ export const cooldowns: Cooldowns = {
   checkData: 30000,
   backupCodes: 90000,
   codeButton: 30000,
-  deleteData: 30000,
+  deleteData: 60000,
 };

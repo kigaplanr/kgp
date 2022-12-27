@@ -31,6 +31,8 @@ const backupCodesCooldown: number = cooldowns.backupCodes;
 const codeButtonTimeout: number = cooldowns.codeButton;
 const deleteDataTimeout: number = cooldowns.deleteData;
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 interface VerificationFormFields {
   "input-klasse": string;
   "input-email": string;
@@ -397,6 +399,43 @@ export default class InteractionCreateEvent extends BaseEvent {
 
         return;
       }
+      case "check-data": {
+        const userQuery = await Verification.findOne({
+          userID: interaction.user.id,
+        });
+
+        if (buttonCooldown.has(interaction.user.id))
+          return interaction.reply({
+            content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
+            ephemeral: true,
+          });
+        buttonCooldown.add(interaction.user.id);
+        setTimeout(
+          () => buttonCooldown.delete(interaction.user.id),
+          checkDataCooldown
+        );
+
+        if (
+          !(interaction.member as GuildMember).roles.cache.has(
+            process.env.VERIFIED_ROLE
+          ) ||
+          !userQuery
+        )
+          return interaction.reply({
+            content: `${emojis.error} | Du hast keine Daten zum Anzeigen.`,
+            ephemeral: true,
+          });
+
+        const embed = new EmbedBuilder()
+          .setTitle("Deine Daten")
+          .setDescription(
+            `**Name:** <@${interaction.user.id}>\n**Klasse:** ${userQuery.klasse}\n**Email:** ${userQuery.email}`
+          )
+          .setTimestamp()
+          .setColor("Green");
+
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+      }
       case "delete-data": {
         if (buttonCooldown.has(interaction.user.id))
           return interaction.reply({
@@ -435,17 +474,37 @@ export default class InteractionCreateEvent extends BaseEvent {
           .setDescription(`${emojis.error} | Vorgang abgebrochen.`)
           .setColor("Red");
 
-        const successEmbed = new EmbedBuilder()
-          .setDescription(
-            `${emojis.success} | Vorgang erfolgreich abgeschlossen.`
-          )
-          .setColor("Green");
-
         const timedOutEmbed = new EmbedBuilder()
           .setDescription(
             `${emojis.error} | Vorgang abgebrochen. (Zeitüberschreitung)`
           )
           .setColor("Red");
+
+        // processing embeds
+        const processingEmbed = new EmbedBuilder()
+          .setDescription(`${emojis.ploading} | Daten werden gesammelt...`)
+          .setFooter({
+            text: "Info: Schließe während des Vorgangs nicht das Fenster",
+          })
+          .setColor("White");
+
+        const processingProfileEmbed = new EmbedBuilder()
+          .setDescription(`${emojis.review} | Nutzerprofil abrufen ...`)
+          .setColor("Green");
+
+        const processingDataDeletion = new EmbedBuilder()
+          .setDescription(`${emojis.notify} | Daten werden gelöscht ...`)
+          .setFooter({
+            text: "Info: Schließe während des Vorgangs nicht das Fenster",
+          })
+          .setColor("Yellow");
+
+        const successEmbed = new EmbedBuilder()
+          .setDescription(
+            `${emojis.success} | Vorgang erfolgreich abgeschlossen.`
+          )
+          .setFooter({ text: "Du kannst nun das Fenster schließen." })
+          .setColor("Green");
 
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
@@ -477,13 +536,36 @@ export default class InteractionCreateEvent extends BaseEvent {
           "collect",
           async (i: MessageComponentInteraction) => {
             if (i.customId === "JA") {
+              // processing embeds
+              await interaction.editReply({
+                embeds: [processingEmbed],
+                components: [],
+              });
+
+              await wait(10000);
+
+              await interaction.editReply({
+                embeds: [processingProfileEmbed],
+                components: [],
+              });
+
+              await wait(8000);
+
+              await interaction.editReply({
+                embeds: [processingDataDeletion],
+                components: [],
+              });
+
+              await wait(5000);
+
               await (interaction.member as GuildMember).roles.remove(
-                process.env.VERIFIED_ROLE!
+                process.env.VERIFIED_ROLE
               );
               await Verification.findOneAndDelete({
                 userID: interaction.user.id,
               });
 
+              // success
               await interaction.editReply({
                 embeds: [successEmbed],
                 components: [],
@@ -512,43 +594,6 @@ export default class InteractionCreateEvent extends BaseEvent {
             }
           }
         );
-      }
-      case "check-data": {
-        const userQuery = await Verification.findOne({
-          userID: interaction.user.id,
-        });
-
-        if (buttonCooldown.has(interaction.user.id))
-          return interaction.reply({
-            content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
-            ephemeral: true,
-          });
-        buttonCooldown.add(interaction.user.id);
-        setTimeout(
-          () => buttonCooldown.delete(interaction.user.id),
-          checkDataCooldown
-        );
-
-        if (
-          !(interaction.member as GuildMember).roles.cache.has(
-            process.env.VERIFIED_ROLE
-          ) ||
-          !userQuery
-        )
-          return interaction.reply({
-            content: `${emojis.error} | Du hast keine Daten zum Anzeigen.`,
-            ephemeral: true,
-          });
-
-        const embed = new EmbedBuilder()
-          .setTitle("Deine Daten")
-          .setDescription(
-            `**Name:** <@${interaction.user.id}>\n**Klasse:** ${userQuery.klasse}\n**Email:** ${userQuery.email}`
-          )
-          .setTimestamp()
-          .setColor("Green");
-
-        return interaction.reply({ embeds: [embed], ephemeral: true });
       }
     }
   }
