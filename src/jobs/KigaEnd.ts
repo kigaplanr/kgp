@@ -2,6 +2,8 @@ import { EmbedBuilder, TextChannel } from "discord.js";
 import cron from "node-cron";
 import { client } from "..";
 
+import { checkIfEnabled, checkIsHoliday } from "./KigaPostCheck";
+
 export async function sendKigaEnd() {
   const channel = (await client.channels.fetch(
     process.env.KIGA_CHANNEL
@@ -19,6 +21,10 @@ export async function sendKigaEnd() {
   cron.schedule(
     "0 13 * * MON-FRI",
     async () => {
+      const isEnabled = await checkIfEnabled();
+      const isHoliday = await checkIsHoliday();
+      if (!isEnabled || isHoliday) return;
+
       await channel.send({ embeds: [embed] });
     },
     {

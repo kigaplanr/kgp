@@ -14,19 +14,18 @@ interface Autoresponse {
   response: string;
 }
 
-interface Welcome {
+interface KigaPost {
   guildID: string;
   enabled: boolean;
-  welcomeChannel: string;
-  welcomerole: string;
-  logchannel: string | null;
+  holiday: boolean;
+  postChannel?: string;
 }
 
 type Update = { enabled: boolean };
-type WelcomeResponse = { content: string; ephemeral: boolean };
+type KigaPostResponse = { content: string; ephemeral: boolean };
 
 // database
-import WelcomeSetup from "../../models/guild/welcome";
+import KigaPost from "../../models/guild/kigapost";
 import Autoresponse from "../../models/guild/autoresponse";
 import emojis from "../../styles/emojis";
 
@@ -36,31 +35,25 @@ export default new Command({
   userPermissions: [PermissionFlagsBits.Administrator],
   options: [
     {
-      name: "welcome",
-      description: "Setup the welcome system",
+      name: "kigapost",
+      description: "Setup the post system",
       type: ApplicationCommandOptionType.Subcommand,
       options: [
         {
           name: "enable",
-          description: "Boolean to enable or disable the welcome system",
+          description: "Boolean to enable or disable the post system",
           type: ApplicationCommandOptionType.Boolean,
           required: true,
         },
         {
-          name: "channel",
-          description: "The channel to send the welcome message",
-          type: ApplicationCommandOptionType.Channel,
+          name: "holiday",
+          description: "Whether the post system is in holiday mode",
+          type: ApplicationCommandOptionType.Boolean,
           required: false,
         },
         {
-          name: "role",
-          description: "The role to give to the new member",
-          type: ApplicationCommandOptionType.Role,
-          required: false,
-        },
-        {
-          name: "logchannel",
-          description: "The channel to log new users to",
+          name: "postchannel",
+          description: "The channel to post the messages to",
           type: ApplicationCommandOptionType.Channel,
           required: false,
         },
@@ -97,22 +90,19 @@ export default new Command({
     await ownerCheck(interaction);
     if (interaction.replied) return;
 
-    if (interaction.options.getSubcommand() === "welcome") {
+    if (interaction.options.getSubcommand() === "kigapost") {
       const enable: boolean = interaction.options.getBoolean("enable");
-      const channel =
-        interaction.options.getChannel("channel") || interaction.channel;
-      const role =
-        interaction.options.getRole("role") ||
-        (process.env.JOIN_ROLE as unknown as Role);
-      const logchannel = interaction.options.getChannel("logchannel");
-
+      const holiday: boolean = interaction.options.getBoolean("holiday");
+      const postchannel =
+        interaction.options.getChannel("postchannel") || interaction.channel;
       const isEnabled: boolean = enable ? true : false;
+      const isHoliday: boolean = holiday ? true : false;
 
-      const guildQuery = await WelcomeSetup.findOne({
+      const guildQuery = await KigaPost.findOne({
         guildID: interaction.guild.id,
       });
 
-      const isTextChannel = channel.type === ChannelType.GuildText;
+      const isTextChannel = postchannel.type === ChannelType.GuildText;
 
       if (!isTextChannel)
         return interaction.reply({
@@ -120,29 +110,26 @@ export default new Command({
           ephemeral: true,
         });
 
-      const update: Welcome = {
+      const data: KigaPost = {
         guildID: interaction.guild.id,
         enabled: isEnabled,
-        welcomeChannel: channel.id,
-        welcomerole: role.id,
-        logchannel:
-          logchannel && logchannel.id ? logchannel.id : guildQuery?.logchannel,
+        holiday: isHoliday,
+        postChannel: postchannel.id,
       };
 
-      const response: WelcomeResponse = {
+      const response: KigaPostResponse = {
         content: enable
-          ? `${emojis.on} | Welcome system successfully enabled`
-          : `${emojis.off} | Welcome system successfully disabled`,
+          ? `${emojis.on} | Post system successfully enabled.\nI will send messages to ${postchannel}`
+          : `${emojis.off} | Post system successfully disabled`,
         ephemeral: true,
       };
 
       return guildQuery
-        ? (await WelcomeSetup.findOneAndUpdate(update)) &&
-            interaction.reply(response)
-        : (await WelcomeSetup.create(update)) &&
+        ? (await KigaPost.findOneAndUpdate(data)) && interaction.reply(response)
+        : (await KigaPost.create(data)) &&
             interaction.reply({
               ...response,
-              content: `${emojis.success} | Welcome system successfully enabled`,
+              content: `${emojis.success} | Post system successfully enabled.\nI will send messages to ${guildQuery.postChannel}`,
             });
     }
 
