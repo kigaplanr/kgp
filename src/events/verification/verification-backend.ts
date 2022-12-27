@@ -20,14 +20,16 @@ import emojis from "../../styles/emojis";
 // cooldowns
 const buttonCooldown = new Set<string | Snowflake>();
 
-const ___defaultCooldown: number = 60000;
-const newRequestCooldown: number = 30000;
-const checkDataCooldown: number = 30000;
-const backupCodesCooldown: number = 90000;
+import { cooldowns } from "../../cooldowns";
+
+const ___defaultCooldown: number = cooldowns.default;
+const newRequestCooldown: number = cooldowns.newRequest;
+const checkDataCooldown: number = cooldowns.checkData;
+const backupCodesCooldown: number = cooldowns.backupCodes;
 
 // collector cooldowns
-const codeButtonTimeout: number = 30000;
-const deleteDataTimeout: number = 30000;
+const codeButtonTimeout: number = cooldowns.codeButton;
+const deleteDataTimeout: number = cooldowns.deleteData;
 
 interface VerificationFormFields {
   "input-klasse": string;
