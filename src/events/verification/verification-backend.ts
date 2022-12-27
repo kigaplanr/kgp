@@ -22,6 +22,7 @@ const buttonCooldown = new Set<string | Snowflake>();
 
 import { cooldowns } from "../../cooldowns";
 
+const verificationCooldown: number = cooldowns.verificationRequest;
 const ___defaultCooldown: number = cooldowns.default;
 const newRequestCooldown: number = cooldowns.newRequest;
 const checkDataCooldown: number = cooldowns.checkData;
@@ -31,6 +32,7 @@ const backupCodesCooldown: number = cooldowns.backupCodes;
 const codeButtonTimeout: number = cooldowns.codeButton;
 const deleteDataTimeout: number = cooldowns.deleteData;
 
+// sleep function for data deletion
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 interface VerificationFormFields {
@@ -98,13 +100,13 @@ export default class InteractionCreateEvent extends BaseEvent {
 
         const member = interaction.member as GuildMember;
 
-        // if (buttonCooldown.has(interaction.user.id))
-        //   return interaction.reply({
-        //     content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
-        //     ephemeral: true,
-        //   });
-        // buttonCooldown.add(interaction.user.id);
-        // setTimeout(() => buttonCooldown.delete(interaction.user.id), 60000);
+        if (
+          buttonCldw(
+            interaction as unknown as CommandInteraction,
+            newRequestCooldown
+          )
+        )
+          return;
 
         const embed = new EmbedBuilder()
           .setDescription(
@@ -139,23 +141,13 @@ export default class InteractionCreateEvent extends BaseEvent {
             ephemeral: true,
           });
 
-        if (buttonCooldown.has(interaction.user.id))
-          return interaction.reply({
-            content: `<@${interaction.user.id}> du kannst dies nur alle paar Sekunden klicken.`,
-            ephemeral: true,
-          });
-        buttonCooldown.add(interaction.user.id);
-        setTimeout(
-          () => buttonCooldown.delete(interaction.user.id),
-          newRequestCooldown
-        );
-
         // generate five codes for the user
         let codes: string[] = [];
         for (let i = 0; i < 5; i++) {
           codes.push(Token.generateToken());
         }
 
+        // create new data entry
         (await Verification.create({
           userID: (member as GuildMember).id,
           guildID: member.guild.id,
@@ -181,6 +173,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         );
 
         try {
+          // log message for admins
           const PendingChannel = interaction.guild?.channels.cache.get(
             process.env.ADMIN_CHANNEL
           ) as TextChannel;
@@ -191,7 +184,7 @@ export default class InteractionCreateEvent extends BaseEvent {
         } catch (error) {
           console.log(error);
           interaction.reply({
-            content: "Es ist ein Fehler aufgetreten.",
+            content: `${emojis.error} | Es ist ein Fehler aufgetreten. Bitte versuche es erneut.`,
             ephemeral: true,
           });
         }
@@ -221,6 +214,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           )
           .setColor("Green");
 
+        // edit the log message, message ? accepted : declined
         await (interaction.message as Message).edit({
           embeds: [acceptedEmbed],
           components: [],
@@ -267,6 +261,7 @@ export default class InteractionCreateEvent extends BaseEvent {
           )
           .setColor("Red");
 
+        // edit log message to declined & set the status to declined
         (interaction.message as Message).edit({
           embeds: [declinedEmbed],
           components: [],
@@ -293,10 +288,13 @@ export default class InteractionCreateEvent extends BaseEvent {
       }
 
       case "display-verificationcodes": {
-        // buttonCldw(
-        //   interaction as unknown as CommandInteraction,
-        //   backupCodesCooldown
-        // );
+        if (
+          buttonCldw(
+            interaction as unknown as CommandInteraction,
+            backupCodesCooldown
+          )
+        )
+          return;
 
         const userQuery = (await Verification.findOne({
           userID: interaction.user.id,
@@ -404,16 +402,13 @@ export default class InteractionCreateEvent extends BaseEvent {
           userID: interaction.user.id,
         });
 
-        if (buttonCooldown.has(interaction.user.id))
-          return interaction.reply({
-            content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
-            ephemeral: true,
-          });
-        buttonCooldown.add(interaction.user.id);
-        setTimeout(
-          () => buttonCooldown.delete(interaction.user.id),
-          checkDataCooldown
-        );
+        if (
+          buttonCldw(
+            interaction as unknown as CommandInteraction,
+            checkDataCooldown
+          )
+        )
+          return;
 
         if (
           !(interaction.member as GuildMember).roles.cache.has(
@@ -437,16 +432,13 @@ export default class InteractionCreateEvent extends BaseEvent {
         return interaction.reply({ embeds: [embed], ephemeral: true });
       }
       case "delete-data": {
-        if (buttonCooldown.has(interaction.user.id))
-          return interaction.reply({
-            content: `<@${interaction.user.id}> du kannst dies nur alle paar Minuten klicken.`,
-            ephemeral: true,
-          });
-        buttonCooldown.add(interaction.user.id);
-        setTimeout(
-          () => buttonCooldown.delete(interaction.user.id),
-          backupCodesCooldown
-        );
+        if (
+          buttonCldw(
+            interaction as unknown as CommandInteraction,
+            backupCodesCooldown
+          )
+        )
+          return;
 
         const userQuery = (await Verification.findOne({
           userID: interaction.user.id,
@@ -558,12 +550,18 @@ export default class InteractionCreateEvent extends BaseEvent {
 
               await wait(5000);
 
-              await (interaction.member as GuildMember).roles.remove(
-                process.env.VERIFIED_ROLE
-              );
-              await Verification.findOneAndDelete({
-                userID: interaction.user.id,
-              });
+              try {
+                // remove the role
+                await (interaction.member as GuildMember).roles.remove(
+                  process.env.VERIFIED_ROLE
+                );
+                // delete the data
+                await Verification.findOneAndDelete({
+                  userID: interaction.user.id,
+                });
+              } catch (error) {
+                console.log(error);
+              }
 
               // success
               await interaction.editReply({

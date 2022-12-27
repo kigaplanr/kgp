@@ -1,5 +1,6 @@
 type Cooldowns = {
   default: number;
+  verificationRequest: number;
   newRequest: number;
   checkData: number;
   backupCodes: number;
@@ -9,6 +10,7 @@ type Cooldowns = {
 
 export const cooldowns: Cooldowns = {
   default: 60000,
+  verificationRequest: 60000,
   newRequest: 30000,
   checkData: 30000,
   backupCodes: 90000,
