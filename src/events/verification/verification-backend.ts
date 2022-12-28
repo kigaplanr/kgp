@@ -593,6 +593,27 @@ export default class InteractionCreateEvent extends BaseEvent {
           }
         );
       }
+
+      case "email-button": {
+        const embed = new EmbedBuilder().setDescription(`
+      Hey ${interaction.user.username}! 
+      Hier ist die Email Adresse der Administration:
+
+      \`bafep.discord@gmail.com\`
+
+      Bitte verwende diese Kontaktmöglichkeit nur bei dringenden Anliegen, sonstige Fragen kannst du im Chat stellen.
+      Wir werden uns so schnell wie möglich bei dir melden.
+      `);
+
+        try {
+          if (interaction.customId === "email-button") {
+            interaction.reply({ embeds: [embed], ephemeral: true });
+          }
+        } catch (error) {
+          console.log(error);
+          return;
+        }
+      }
     }
   }
 }
