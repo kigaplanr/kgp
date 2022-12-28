@@ -43,19 +43,19 @@ export default new Command({
         },
       ],
     },
-    {
-      name: "faq",
-      description: "Sends the FAQ panel",
-      type: ApplicationCommandOptionType.Subcommand,
-      options: [
-        {
-          name: "channel",
-          description: "The channel to send the panel in",
-          type: ApplicationCommandOptionType.Channel,
-          required: false,
-        },
-      ],
-    },
+    // {
+    //   name: "faq",
+    //   description: "Sends the FAQ panel",
+    //   type: ApplicationCommandOptionType.Subcommand,
+    //   options: [
+    //     {
+    //       name: "channel",
+    //       description: "The channel to send the panel in",
+    //       type: ApplicationCommandOptionType.Channel,
+    //       required: false,
+    //     },
+    //   ],
+    // },
     {
       name: "email",
       description: "Sends the email panel",
@@ -158,54 +158,54 @@ export default new Command({
       (channel as TextChannel).send({ embeds: [embed], components: [row] });
     }
 
-    if (interaction.options.getSubcommand() === "faq") {
-      const embed = new EmbedBuilder().setDescription(
-        `Willkommen im **${interaction.guild?.name}** Server!
-        
-        All Fragen sind unten beantwortet, einfach auf das jeweilige Menü klicken.
-        `
-      );
+    // if (interaction.options.getSubcommand() === "faq") {
+    //   const embed = new EmbedBuilder().setDescription(
+    //     `Willkommen im **${interaction.guild?.name}** Server!
 
-      const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId("questions")
-          .setPlaceholder("Noch nichts ausgewählt :(")
-          .addOptions([
-            {
-              label: "Was ist das hier?",
-              description: "Erzählt dir mehr über uns",
-              value: "first_option",
-              emoji: `${emojis.botserver}`,
-            },
-            {
-              label: 'Warum über "Discord"?',
-              description: "Warum wird Discord als Plattform gewählt haben",
-              value: "second_option",
-              emoji: `${emojis.users}`,
-            },
-            {
-              label: "Privatsphäre und Sicherheit",
-              description: "Ist das hier Anonym und sicher?",
-              value: "third_option",
-              emoji: `${emojis.review}`,
-            },
-            {
-              label: "Ziel des Servers",
-              description: "Wieso, für was, warum?",
-              value: "fourth_option",
-              emoji: `${emojis.partner}`,
-            },
-            {
-              label: "Wie kann ich beitreten oder verlassen",
-              description: "Eine genaue Anleitung",
-              value: "fifth_option",
-              emoji: `${emojis.save}`,
-            },
-          ])
-      );
-      interaction.reply({ content: "Done!", ephemeral: true });
-      (channel as TextChannel).send({ embeds: [embed], components: [row] });
-    }
+    //     All Fragen sind unten beantwortet, einfach auf das jeweilige Menü klicken.
+    //     `
+    //   );
+
+    //   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+    //     new StringSelectMenuBuilder()
+    //       .setCustomId("questions")
+    //       .setPlaceholder("Noch nichts ausgewählt :(")
+    //       .addOptions([
+    //         {
+    //           label: "Was ist das hier?",
+    //           description: "Erzählt dir mehr über uns",
+    //           value: "first_option",
+    //           emoji: `${emojis.botserver}`,
+    //         },
+    //         {
+    //           label: 'Warum über "Discord"?',
+    //           description: "Warum wird Discord als Plattform gewählt haben",
+    //           value: "second_option",
+    //           emoji: `${emojis.users}`,
+    //         },
+    //         {
+    //           label: "Privatsphäre und Sicherheit",
+    //           description: "Ist das hier Anonym und sicher?",
+    //           value: "third_option",
+    //           emoji: `${emojis.review}`,
+    //         },
+    //         {
+    //           label: "Ziel des Servers",
+    //           description: "Wieso, für was, warum?",
+    //           value: "fourth_option",
+    //           emoji: `${emojis.partner}`,
+    //         },
+    //         {
+    //           label: "Wie kann ich beitreten oder verlassen",
+    //           description: "Eine genaue Anleitung",
+    //           value: "fifth_option",
+    //           emoji: `${emojis.save}`,
+    //         },
+    //       ])
+    //   );
+    //   interaction.reply({ content: "Done!", ephemeral: true });
+    //   (channel as TextChannel).send({ embeds: [embed], components: [row] });
+    // }
 
     if (interaction.options.getSubcommand() === "email") {
       const channel =
