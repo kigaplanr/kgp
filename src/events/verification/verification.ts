@@ -35,13 +35,13 @@ export default class InteractionCreateEvent extends BaseEvent {
         if (!isVerified) {
           await interaction.member.roles.add(role);
           return interaction.reply({
-            content: `${emojis.success} | You are now verified!`,
+            content: `${emojis.success} | Erfolgreich als Besucher verifiziert!`,
             ephemeral: true,
           });
         }
 
         return interaction.reply({
-          content: `${emojis.error} | You are already verified!`,
+          content: `${emojis.error} | Du bist bereits verifiziert.`,
           ephemeral: true,
         });
       }
