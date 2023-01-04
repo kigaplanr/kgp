@@ -1,6 +1,7 @@
 import {
   ApplicationCommandOptionType,
   ChannelType,
+  EmbedBuilder,
   PermissionFlagsBits,
   Role,
 } from "discord.js";
@@ -58,6 +59,11 @@ export default new Command({
           required: false,
         },
       ],
+    },
+    {
+      name: "settings",
+      description: "View the settings for the server",
+      type: ApplicationCommandOptionType.Subcommand,
     },
     {
       name: "autoresponse",
@@ -119,8 +125,8 @@ export default new Command({
 
       const response: KigaPostResponse = {
         content: enable
-          ? `${emojis.on} | Post system successfully enabled.\nI will send messages to ${postchannel}`
-          : `${emojis.off} | Post system successfully disabled`,
+          ? `${emojis.on} | Post system successfully enabled.`
+          : `${emojis.off} | Post system successfully disabled.`,
         ephemeral: true,
       };
 
@@ -131,6 +137,33 @@ export default new Command({
               ...response,
               content: `${emojis.success} | Post system successfully enabled.\nI will send messages to ${guildQuery.postChannel}`,
             });
+    }
+
+    if (interaction.options.getSubcommand() === "settings") {
+      const postQuery = await KigaPost.findOne({ guild: interaction.guild.id });
+      const autoresponseQuery = await Autoresponse.findOne({
+        guild: interaction.guild.id,
+      });
+
+      if(!postQuery || !autoresponseQuery) return interaction.reply({ content: `${emojis.error} | No settings found for this server`, ephemeral: true });
+
+      const postChannel = await interaction.guild.channels.cache.get(
+        postQuery.postChannel
+      );
+      
+      const postEnabled = postQuery.enabled ? `${emojis.on}` : `${emojis.off}`;
+      const postHoliday = postQuery.holiday ? `${emojis.on}` : `${emojis.off}`;
+      const autoresponseEnabled = autoresponseQuery.enabled ? `${emojis.on}` : `${emojis.off}`;
+
+      const embed = new EmbedBuilder().setTitle("Guild Settings").addFields([
+        {
+          name: "Post System",
+          value: `Enabled: ${postEnabled}\nHoliday: ${postHoliday}\nChannel: ${postChannel}`,
+        },
+        { name: "Autoresponse", value: `Enabled: ${autoresponseEnabled}` },
+      ]);
+
+      return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     if (interaction.options.getSubcommand() === "autoresponse") {
