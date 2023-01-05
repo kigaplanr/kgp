@@ -1,5 +1,5 @@
 import { ActivityType } from "discord.js";
-import { sendKigaStart, sendKigaInfo, sendKigaEnd } from "../jobs";
+import { sendKigaStart, sendKigaInfo, sendKigaEnd, serverStatus } from "../jobs";
 import Logger from "../logger";
 import { ExtendedClient } from "../structures/Client";
 import { BaseEvent } from "../structures/Event";
@@ -20,5 +20,6 @@ export default class ReadyEvent extends BaseEvent {
     sendKigaStart();
     sendKigaInfo();
     sendKigaEnd();
+    serverStatus();
   }
 }

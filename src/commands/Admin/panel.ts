@@ -43,19 +43,19 @@ export default new Command({
         },
       ],
     },
-    // {
-    //   name: "faq",
-    //   description: "Sends the FAQ panel",
-    //   type: ApplicationCommandOptionType.Subcommand,
-    //   options: [
-    //     {
-    //       name: "channel",
-    //       description: "The channel to send the panel in",
-    //       type: ApplicationCommandOptionType.Channel,
-    //       required: false,
-    //     },
-    //   ],
-    // },
+    {
+      name: "status",
+      description: "Sends server status panel",
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: "channel",
+          description: "The channel to send the panel in",
+          type: ApplicationCommandOptionType.Channel,
+          required: false,
+        },
+      ],
+    },
     {
       name: "email",
       description: "Sends the email panel",
@@ -113,99 +113,52 @@ export default new Command({
       (channel as TextChannel).send({ embeds: [embed], components: [row] });
     }
 
-    if (interaction.options.getSubcommand() === "privacy") {
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId("delete-data")
-          .setLabel("Daten löschen")
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId("check-data")
-          .setStyle(ButtonStyle.Primary)
-          .setLabel("Daten anzeigen")
-          .setEmoji(`${emojis.review}`),
-        new ButtonBuilder()
-          .setCustomId("display-verificationcodes")
-          .setStyle(ButtonStyle.Secondary)
-          .setLabel("Wiederherstellungscodes anzeigen")
-          .setEmoji(`${emojis.file}`)
-      );
+    if (interaction.options.getSubcommand() === "status") {
+      const guildMembers = interaction.guild.members.fetch({
+        withPresences: true,
+      });
+      const totalOnline = await (
+        await guildMembers
+      ).filter((member) => member.presence?.status === "online");
 
-      const embed = new EmbedBuilder().setDescription(
-        `
-          **Datenschutz, Privatsphäre**
-          
-          Nach dem Interagieren mit diesem Bot, speichern wir gewisse Daten über dich. 
-          - Deine öffentliche Discord Profil Nummer
-          - (Falls angegeben) Deine E-Mail Adresse
-          - (Falls angegeben) Deine Klasse
-          - (Falls angegeben) Beweismaterial für die Verifikation.
-
-          Diese Daten werden nur für die Verifikation verwendet und nicht an Dritte weitergegeben.
-          Natürlich gibt es die Möglichkeit komplett auszutreten, z.B. 
-          - Bei Schulwechsel
-          - Bei Schulabschluss
-          - Bei Verlassen der Schule
-          ... sonstige Gründe
-
-          Du kannst mit dem 2. Knopf "Daten anzeigen", deine Daten (falls vorhanden) einsehen, und mit dem 1. Knopf "Daten löschen" deine Daten löschen lassen.
-          Bei Verlust des alten (verifizierten) Kontos, gibt es die Möglichkeit, diesen Wiederherzustellen. Dazu benötigst du die Wiederherstellungs-Codes des alten Kontos.
-          Um den Prozess zu starten, klicke auf den "Daten löschen" Knopf. Dieser wird dich durch den Prozess führen.
-          `
-      );
+      const serverEmbed = new EmbedBuilder()
+        .addFields([
+          {
+            name: `${emojis.users} Mitglieder`,
+            value: `${interaction.guild?.memberCount}`,
+            inline: true,
+          },
+          {
+            name: `${emojis.online} Online`,
+            value: `${totalOnline?.size}`,
+            inline: true,
+          },
+          {
+            name: `${emojis.review} Verifizierte Mitglieder`,
+            value: `${
+              interaction.guild?.roles.cache.get(process.env.VERIFIED_ROLE)
+                ?.members.size
+            }`,
+            inline: true,
+          },
+        ])
+        .setFooter({ text: `Letztes Update: ${new Date().toLocaleString()}` });
 
       interaction.reply({ content: "Done", ephemeral: true });
-      (channel as TextChannel).send({ embeds: [embed], components: [row] });
+      (channel as TextChannel).send({ embeds: [serverEmbed] });
     }
 
-    // if (interaction.options.getSubcommand() === "faq") {
-    //   const embed = new EmbedBuilder().setDescription(
-    //     `Willkommen im **${interaction.guild?.name}** Server!
+    if (interaction.options.getSubcommand() === "faq") {
+      const embed = new EmbedBuilder().setDescription(
+        `Willkommen im **${interaction.guild?.name}** Server!
 
-    //     All Fragen sind unten beantwortet, einfach auf das jeweilige Menü klicken.
-    //     `
-    //   );
+        All Fragen sind unten beantwortet, einfach auf das jeweilige Menü klicken.
+        `
+      );
 
-    //   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-    //     new StringSelectMenuBuilder()
-    //       .setCustomId("questions")
-    //       .setPlaceholder("Noch nichts ausgewählt :(")
-    //       .addOptions([
-    //         {
-    //           label: "Was ist das hier?",
-    //           description: "Erzählt dir mehr über uns",
-    //           value: "first_option",
-    //           emoji: `${emojis.botserver}`,
-    //         },
-    //         {
-    //           label: 'Warum über "Discord"?',
-    //           description: "Warum wird Discord als Plattform gewählt haben",
-    //           value: "second_option",
-    //           emoji: `${emojis.users}`,
-    //         },
-    //         {
-    //           label: "Privatsphäre und Sicherheit",
-    //           description: "Ist das hier Anonym und sicher?",
-    //           value: "third_option",
-    //           emoji: `${emojis.review}`,
-    //         },
-    //         {
-    //           label: "Ziel des Servers",
-    //           description: "Wieso, für was, warum?",
-    //           value: "fourth_option",
-    //           emoji: `${emojis.partner}`,
-    //         },
-    //         {
-    //           label: "Wie kann ich beitreten oder verlassen",
-    //           description: "Eine genaue Anleitung",
-    //           value: "fifth_option",
-    //           emoji: `${emojis.save}`,
-    //         },
-    //       ])
-    //   );
-    //   interaction.reply({ content: "Done!", ephemeral: true });
-    //   (channel as TextChannel).send({ embeds: [embed], components: [row] });
-    // }
+      interaction.reply({ content: "Done!", ephemeral: true });
+      (channel as TextChannel).send({ embeds: [embed] });
+    }
 
     if (interaction.options.getSubcommand() === "email") {
       const channel =
