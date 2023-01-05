@@ -41,11 +41,6 @@ export async function serverStatus() {
         value: `${verifiedMembers}`,
         inline: true,
       },
-      {
-        name: "Random Number",
-        value: `${Math.floor(Math.random() * 1000)}`,
-        inline: true,
-      },
     ])
     .setFooter({ text: `Letztes Update: ${new Date().toLocaleString()}` });
 
