@@ -13,7 +13,9 @@ export async function serverStatus() {
 
   if (!message) return;
 
-  const guildMembers = client.guilds.cache.get(guild)?.members.fetch();
+  const guildMembers = await (
+    await client.guilds.fetch(guild)
+  )?.members.fetch();
   const totalOnline = await (
     await guildMembers
   ).filter((member) => member.presence?.status === "online");
@@ -24,27 +26,26 @@ export async function serverStatus() {
     ?.roles.cache.get(process.env.VERIFIED_ROLE)?.members.size;
   const memberCount = client.guilds.cache.get(guild)?.memberCount;
 
-  const serverEmbed = new EmbedBuilder()
-    .addFields([
-      {
-        name: `${emojis.users} Mitglieder`,
-        value: `${memberCount}`,
-        inline: true,
-      },
-      {
-        name: `${emojis.online} Online`,
-        value: `${totalOnline?.size}`,
-        inline: true,
-      },
-      {
-        name: `${emojis.review} Verifizierte Mitglieder`,
-        value: `${verifiedMembers}`,
-        inline: true,
-      },
-    ])
-    .setFooter({ text: `Letztes Update: ${new Date().toLocaleString()}` });
-
   cron.schedule("*/60 * * * * *", async () => {
+    const serverEmbed = new EmbedBuilder()
+      .addFields([
+        {
+          name: `${emojis.online} Online`,
+          value: `${totalOnline?.size}`,
+          inline: true,
+        },
+        {
+          name: `${emojis.users} Mitglieder`,
+          value: `${memberCount}`,
+          inline: true,
+        },
+        {
+          name: `${emojis.review} Verifizierte Mitglieder`,
+          value: `${verifiedMembers}`,
+          inline: true,
+        },
+      ])
+      .setFooter({ text: `Letztes Update: ${new Date().toLocaleString()}` });
     await message.edit({ embeds: [serverEmbed] });
   });
 }
