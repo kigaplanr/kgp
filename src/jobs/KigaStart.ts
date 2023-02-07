@@ -10,7 +10,7 @@ export async function sendKigaStart() {
   )) as TextChannel;
   const embed = new EmbedBuilder()
     .setDescription(
-      `Guten Morgeeeeen! ☕️\n\nWir schönen euch einen schönen Praxis- bzw. Schultag 😎`
+      `Guten Morgeeeeen! ☕️\n\nWir wünschen euch einen schönen Praxis- bzw. Schultag 😎`
     )
     .setColor("Random")
     .setFooter({
