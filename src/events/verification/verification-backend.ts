@@ -174,9 +174,9 @@ export default class InteractionCreateEvent extends BaseEvent {
 
         try {
           // log message for admins
-          const PendingChannel = interaction.guild?.channels.cache.get(
+          const PendingChannel = (await interaction.guild?.channels.fetch(
             process.env.ADMIN_CHANNEL
-          ) as TextChannel;
+          )) as TextChannel;
           await PendingChannel.send({
             embeds: [pendingEmbed],
             components: [buttonRow],

@@ -11,8 +11,8 @@ import emojis from "../../styles/emojis";
 
 type Operation = { $set: Record<string, string> } | {};
 
-type NewTrigger = string | undefined;
-type Response = string | undefined;
+type NewTrigger = string;
+type Response = string;
 
 export default new Command({
   name: "manage",

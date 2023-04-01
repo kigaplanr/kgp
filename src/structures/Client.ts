@@ -25,7 +25,7 @@ export class ExtendedClient extends Discord.Client {
   }
   start() {
     this.registerModules();
-    this.login(process.env.BOT_TOKEN);
+    this.login(process.env.TOKEN);
     connect();
     this.registerEvents("../events");
   }
